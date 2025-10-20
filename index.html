@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Pricing Strategy Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+          -webkit-appearance: none; 
+          margin: 0; 
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white p-4 sm:py-8">
+    <div class="w-full max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-white">Product Pricing Strategy Calculator</h1>
+            <p class="text-slate-400 mt-2">Find the optimal selling price for your products (including 18% GST).</p>
+        </header>
+
+        <main class="space-y-8">
+            <!-- Main Input Section -->
+            <div class="bg-slate-800 p-6 rounded-lg shadow-lg">
+                <h2 class="text-lg font-semibold text-sky-300 mb-4">Enter Your Product Costs (ex-GST)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="buyingPrice" class="block text-sm font-medium text-slate-300">Buying Price</label>
+                        <div class="relative mt-1">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">₹</span>
+                            <input type="number" id="buyingPrice" placeholder="1000" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 pl-7 pr-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="packingCost" class="block text-sm font-medium text-slate-300">Packing Fees</label>
+                        <div class="relative mt-1">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">₹</span>
+                            <input type="number" id="packingCost" placeholder="25" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 pl-7 pr-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500">
+                        </div>
+                    </div>
+                     <div>
+                        <label for="pgFeePercent" class="block text-sm font-medium text-slate-300">Processing Fee</label>
+                        <div class="relative mt-1">
+                            <input type="number" id="pgFeePercent" value="2" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 pl-4 pr-7 text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500">
+                            <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suggested Pricing Tiers -->
+            <div>
+                <h2 class="text-2xl font-bold text-center mb-6">Suggested Selling Prices (inc. 18% GST)</h2>
+                <div id="results" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Cards will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <!-- What-If Calculator -->
+            <div class="bg-slate-800 p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold text-center mb-6">Explore Your Own Pricing</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    <div>
+                        <label for="customMargin" class="block text-md font-semibold text-slate-300 mb-2">If my desired margin is:</label>
+                        <div class="relative">
+                            <input type="number" id="customMargin" placeholder="50" class="w-full bg-slate-700 border border-slate-600 rounded-md py-3 pr-8 pl-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500">
+                             <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">%</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="customPrice" class="block text-md font-semibold text-slate-300 mb-2">Then my selling price should be:</label>
+                         <p class="text-xs text-slate-400 mb-2">(Enter final price including 18% GST)</p>
+                        <div class="relative">
+                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">₹</span>
+                            <input type="number" id="customPrice" placeholder="2950.00" class="w-full bg-slate-700 border border-slate-600 rounded-md py-3 pl-7 pr-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const GST_RATE = 1.18; // 18% GST
+        const SUGGESTED_MARGINS = [
+            { name: 'Competitive', value: 25, color: 'green-400', highlight: false },
+            { name: 'Healthy', value: 40, color: 'sky-300', highlight: true },
+            { name: 'Premium', value: 60, color: 'purple-400', highlight: false }
+        ];
+
+        // --- DOM ELEMENT REFERENCES ---
+        const inputs = {
+            buyingPrice: document.getElementById('buyingPrice'),
+            packingCost: document.getElementById('packingCost'),
+            pgFeePercent: document.getElementById('pgFeePercent'),
+        };
+        const customMarginInput = document.getElementById('customMargin');
+        const customPriceInput = document.getElementById('customPrice');
+        const resultsContainer = document.getElementById('results');
+
+        // --- CALCULATION LOGIC ---
+        
+        /**
+         * Calculates the required ex-GST selling price to achieve a target margin,
+         * accounting for a payment gateway fee charged on the final inc-GST price.
+         */
+        function calculatePriceFromMargin(baseCost, margin, pgFeePercent) {
+            if (baseCost <= 0) return 0;
+            const marginDecimal = margin / 100;
+            const pgFeeDecimal = pgFeePercent / 100;
+            
+            // Formula derived from: PriceExGST = BaseCost + Profit + PGFee
+            // where Profit = margin * PriceExGST and PGFee = (PriceExGST * GST_RATE) * pgFeeDecimal
+            const denominator = 1 - marginDecimal - (pgFeeDecimal * GST_RATE);
+            if (denominator <= 0) return 0; // Not possible to achieve this margin
+            
+            return baseCost / denominator;
+        }
+
+        /**
+         * Calculates the true margin percentage from a selling price, accounting for all costs.
+         */
+        function calculateMarginFromPrice(baseCost, priceIncGST, pgFeePercent) {
+            if (baseCost <= 0 || priceIncGST <= 0) return 0;
+            
+            const priceExGST = priceIncGST / GST_RATE;
+            const pgFeeAmount = priceIncGST * (pgFeePercent / 100);
+            const totalCost = baseCost + pgFeeAmount;
+            
+            if (priceExGST <= totalCost) return 0;
+
+            const profit = priceExGST - totalCost;
+            return (profit / priceExGST) * 100;
+        }
+
+        // --- UPDATE UI FUNCTIONS ---
+
+        function updateAllCalculations() {
+            const buyingPrice = parseFloat(inputs.buyingPrice.value) || 0;
+            const packingCost = parseFloat(inputs.packingCost.value) || 0;
+            const pgFeePercent = parseFloat(inputs.pgFeePercent.value) || 0;
+            const baseCost = buyingPrice + packingCost;
+
+            if (baseCost <= 0) {
+                resultsContainer.innerHTML = `<div class="md:col-span-3 text-center text-slate-500 py-10">Enter a buying price to start.</div>`;
+                return;
+            }
+
+            // Render suggestion cards
+            resultsContainer.innerHTML = SUGGESTED_MARGINS.map(tier => {
+                const rawPriceExGST = calculatePriceFromMargin(baseCost, tier.value, pgFeePercent);
+                if (rawPriceExGST <= 0) return ''; // Don't render if margin is impossible
+
+                const rawPriceIncGST = rawPriceExGST * GST_RATE;
+                const roundedPriceIncGST = Math.ceil(rawPriceIncGST); // Round up to nearest whole number
+
+                // Recalculate profit based on the new rounded price
+                const finalPriceExGST = roundedPriceIncGST / GST_RATE;
+                const pgFeeAmount = roundedPriceIncGST * (pgFeePercent / 100);
+                const totalCost = baseCost + pgFeeAmount;
+                const profit = finalPriceExGST - totalCost;
+
+                const highlightClass = tier.highlight ? 'bg-sky-900/50 border-2 border-sky-500' : 'bg-slate-800 border border-slate-700';
+
+                return `
+                    <div class="${highlightClass} p-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
+                        <h3 class="font-bold text-xl text-${tier.color}">${tier.name} Margin</h3>
+                        <p class="text-3xl font-bold my-3">₹${roundedPriceIncGST.toFixed(2)}</p>
+                        <div class="text-sm space-y-1 text-slate-300">
+                            <p><strong>Target Margin:</strong> <span>${tier.value}%</span></p>
+                            <p><strong>Net Profit:</strong> <span>₹${profit.toFixed(2)}</span></p>
+                            <p class="text-slate-400 mt-2">Price (ex-GST): <span>₹${finalPriceExGST.toFixed(2)}</span></p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+             if(resultsContainer.innerHTML.trim() === '') {
+                 resultsContainer.innerHTML = `<div class="md:col-span-3 text-center text-red-400 py-10">Costs are too high for these margins.</div>`;
+             }
+
+            // Update custom calculator
+            if (document.activeElement !== customPriceInput) {
+                updateCustomPrice();
+            } else {
+                updateCustomMargin();
+            }
+        }
+
+        function updateCustomPrice() {
+            const buyingPrice = parseFloat(inputs.buyingPrice.value) || 0;
+            const packingCost = parseFloat(inputs.packingCost.value) || 0;
+            const pgFeePercent = parseFloat(inputs.pgFeePercent.value) || 0;
+            const baseCost = buyingPrice + packingCost;
+            const margin = parseFloat(customMarginInput.value) || 0;
+
+            if (baseCost > 0) {
+                const priceExGST = calculatePriceFromMargin(baseCost, margin, pgFeePercent);
+                const priceIncGST = priceExGST * GST_RATE;
+                const roundedPriceIncGST = Math.ceil(priceIncGST);
+                customPriceInput.value = roundedPriceIncGST > 0 ? roundedPriceIncGST.toFixed(0) : '';
+            } else {
+                customPriceInput.value = '';
+            }
+        }
+
+        function updateCustomMargin() {
+            const buyingPrice = parseFloat(inputs.buyingPrice.value) || 0;
+            const packingCost = parseFloat(inputs.packingCost.value) || 0;
+            const pgFeePercent = parseFloat(inputs.pgFeePercent.value) || 0;
+            const baseCost = buyingPrice + packingCost;
+            const priceIncGST = parseFloat(customPriceInput.value) || 0;
+
+            if (baseCost > 0 && priceIncGST > 0) {
+                const margin = calculateMarginFromPrice(baseCost, priceIncGST, pgFeePercent);
+                customMarginInput.value = margin > 0 ? margin.toFixed(2) : '';
+            } else {
+                customMarginInput.value = '';
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        Object.values(inputs).forEach(input => input.addEventListener('input', updateAllCalculations));
+        customMarginInput.addEventListener('input', updateCustomPrice);
+        customPriceInput.addEventListener('input', updateCustomMargin);
+
+        // --- INITIAL RENDER ---
+        updateAllCalculations();
+    </script>
+</body>
+</html>
+
+
