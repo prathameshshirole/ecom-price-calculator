@@ -86,6 +86,20 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Custom Calculation Results -->
+                <div class="mt-6 pt-6 border-t border-slate-700">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-700/50 p-4 rounded-md">
+                            <p class="text-sm text-slate-400 mb-1">Net Profit:</p>
+                            <p class="text-2xl font-bold text-green-400" id="customNetProfit">₹0.00</p>
+                        </div>
+                        <div class="bg-slate-700/50 p-4 rounded-md">
+                            <p class="text-sm text-slate-400 mb-1">Price (ex-GST):</p>
+                            <p class="text-2xl font-bold text-sky-300" id="customPriceExGST">₹0.00</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -107,6 +121,8 @@
         };
         const customMarginInput = document.getElementById('customMargin');
         const customPriceInput = document.getElementById('customPrice');
+        const customNetProfitDisplay = document.getElementById('customNetProfit');
+        const customPriceExGSTDisplay = document.getElementById('customPriceExGST');
         const resultsContainer = document.getElementById('results');
 
         // --- CALCULATION LOGIC ---
@@ -209,8 +225,24 @@
                 const priceIncGST = priceExGST * GST_RATE;
                 const roundedPriceIncGST = Math.ceil(priceIncGST);
                 customPriceInput.value = roundedPriceIncGST > 0 ? roundedPriceIncGST.toFixed(0) : '';
+                
+                // Update the display fields
+                if (roundedPriceIncGST > 0) {
+                    const finalPriceExGST = roundedPriceIncGST / GST_RATE;
+                    const pgFeeAmount = roundedPriceIncGST * (pgFeePercent / 100);
+                    const totalCost = baseCost + pgFeeAmount;
+                    const profit = finalPriceExGST - totalCost;
+                    
+                    customNetProfitDisplay.textContent = `₹${profit.toFixed(2)}`;
+                    customPriceExGSTDisplay.textContent = `₹${finalPriceExGST.toFixed(2)}`;
+                } else {
+                    customNetProfitDisplay.textContent = '₹0.00';
+                    customPriceExGSTDisplay.textContent = '₹0.00';
+                }
             } else {
                 customPriceInput.value = '';
+                customNetProfitDisplay.textContent = '₹0.00';
+                customPriceExGSTDisplay.textContent = '₹0.00';
             }
         }
 
@@ -224,8 +256,24 @@
             if (baseCost > 0 && priceIncGST > 0) {
                 const margin = calculateMarginFromPrice(baseCost, priceIncGST, pgFeePercent);
                 customMarginInput.value = margin > 0 ? margin.toFixed(2) : '';
+                
+                // Update the display fields
+                if (margin > 0) {
+                    const priceExGST = priceIncGST / GST_RATE;
+                    const pgFeeAmount = priceIncGST * (pgFeePercent / 100);
+                    const totalCost = baseCost + pgFeeAmount;
+                    const profit = priceExGST - totalCost;
+                    
+                    customNetProfitDisplay.textContent = `₹${profit.toFixed(2)}`;
+                    customPriceExGSTDisplay.textContent = `₹${priceExGST.toFixed(2)}`;
+                } else {
+                    customNetProfitDisplay.textContent = '₹0.00';
+                    customPriceExGSTDisplay.textContent = '₹0.00';
+                }
             } else {
                 customMarginInput.value = '';
+                customNetProfitDisplay.textContent = '₹0.00';
+                customPriceExGSTDisplay.textContent = '₹0.00';
             }
         }
 
