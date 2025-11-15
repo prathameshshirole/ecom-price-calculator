@@ -25,35 +25,51 @@
 <body class="bg-slate-900 text-white p-4 sm:py-8">
     <div class="w-full max-w-4xl mx-auto">
         <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-white">Product Pricing Strategy Calculator</h1>
-            <p class="text-slate-400 mt-2">Find the optimal selling price for your products (including 18% GST).</p>
+            <h1 class="text-3xl md:text-4xl font-bold text-white">Website Pricing Calculator</h1>
+            <p class="text-slate-400 mt-2">Calculate optimal selling prices for your online store (including 18% GST).</p>
         </header>
 
         <main class="space-y-8">
             <!-- Main Input Section -->
             <div class="bg-slate-800 p-6 rounded-lg shadow-lg">
-                <h2 class="text-lg font-semibold text-sky-300 mb-4">Enter Your Product Costs (ex-GST)</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <h2 class="text-lg font-semibold text-sky-300 mb-4">Product Costs (ex-GST)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="buyingPrice" class="block text-sm font-medium text-slate-300">Buying Price</label>
+                        <label for="buyingPrice" class="block text-sm font-medium text-slate-300">Buying/Manufacturing Price</label>
                         <div class="relative mt-1">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">₹</span>
                             <input type="number" id="buyingPrice" placeholder="1000" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 pl-7 pr-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500">
                         </div>
                     </div>
                     <div>
-                        <label for="packingCost" class="block text-sm font-medium text-slate-300">Packing Fees</label>
+                        <label for="packingCost" class="block text-sm font-medium text-slate-300">Packing Cost</label>
                         <div class="relative mt-1">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">₹</span>
                             <input type="number" id="packingCost" placeholder="25" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 pl-7 pr-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500">
                         </div>
                     </div>
-                     <div>
-                        <label for="pgFeePercent" class="block text-sm font-medium text-slate-300">Processing Fee</label>
+                </div>
+            </div>
+
+            <!-- Payment & Processing Fees -->
+            <div class="bg-slate-800 p-6 rounded-lg shadow-lg">
+                <h2 class="text-lg font-semibold text-orange-300 mb-4">Payment Processing</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="pgFeePercent" class="block text-sm font-medium text-slate-300">Payment Gateway Fee</label>
                         <div class="relative mt-1">
-                            <input type="number" id="pgFeePercent" value="2" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 pl-4 pr-7 text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500">
+                            <input type="number" id="pgFeePercent" value="2" step="0.1" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 pl-4 pr-7 text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500">
                             <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">%</span>
                         </div>
+                        <p class="text-xs text-slate-500 mt-1">Razorpay/Paytm: ~2%, PhonePe: 1.99%, PayU: 2-3%</p>
+                    </div>
+                    <div>
+                        <label for="fixedFee" class="block text-sm font-medium text-slate-300">Fixed Transaction Fee</label>
+                        <div class="relative mt-1">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">₹</span>
+                            <input type="number" id="fixedFee" placeholder="0" value="0" class="w-full bg-slate-700 border border-slate-600 rounded-md py-2 pl-7 pr-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Some gateways charge ₹2-3 per transaction</p>
                     </div>
                 </div>
             </div>
@@ -61,7 +77,7 @@
             <!-- Suggested Pricing Tiers -->
             <div>
                 <h2 class="text-2xl font-bold text-center mb-6">Suggested Selling Prices (inc. 18% GST)</h2>
-                <div id="results" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div id="results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <!-- Cards will be dynamically inserted here -->
                 </div>
             </div>
@@ -109,6 +125,7 @@
         const GST_RATE = 1.18; // 18% GST
         const SUGGESTED_MARGINS = [
             { name: 'Competitive', value: 25, color: 'green-400', highlight: false },
+            { name: 'Balanced', value: 30, color: 'yellow-400', highlight: false },
             { name: 'Healthy', value: 40, color: 'sky-300', highlight: true },
             { name: 'Premium', value: 60, color: 'purple-400', highlight: false }
         ];
@@ -118,6 +135,7 @@
             buyingPrice: document.getElementById('buyingPrice'),
             packingCost: document.getElementById('packingCost'),
             pgFeePercent: document.getElementById('pgFeePercent'),
+            fixedFee: document.getElementById('fixedFee'),
         };
         const customMarginInput = document.getElementById('customMargin');
         const customPriceInput = document.getElementById('customPrice');
@@ -129,34 +147,34 @@
         
         /**
          * Calculates the required ex-GST selling price to achieve a target margin,
-         * accounting for a payment gateway fee charged on the final inc-GST price.
+         * accounting for payment gateway fees and fixed transaction fees.
          */
-        function calculatePriceFromMargin(baseCost, margin, pgFeePercent) {
+        function calculatePriceFromMargin(baseCost, margin, pgFeePercent, fixedFee) {
             if (baseCost <= 0) return 0;
             const marginDecimal = margin / 100;
             const pgFeeDecimal = pgFeePercent / 100;
             
-            // Formula derived from: PriceExGST = BaseCost + Profit + PGFee
-            // where Profit = margin * PriceExGST and PGFee = (PriceExGST * GST_RATE) * pgFeeDecimal
+            // Formula: PriceExGST = (BaseCost + FixedFee) / (1 - margin - (pgFeeDecimal * GST_RATE))
             const denominator = 1 - marginDecimal - (pgFeeDecimal * GST_RATE);
-            if (denominator <= 0) return 0; // Not possible to achieve this margin
+            if (denominator <= 0) return 0;
             
-            return baseCost / denominator;
+            return (baseCost + (fixedFee / GST_RATE)) / denominator;
         }
 
         /**
          * Calculates the true margin percentage from a selling price, accounting for all costs.
          */
-        function calculateMarginFromPrice(baseCost, priceIncGST, pgFeePercent) {
+        function calculateMarginFromPrice(baseCost, priceIncGST, pgFeePercent, fixedFee) {
             if (baseCost <= 0 || priceIncGST <= 0) return 0;
             
             const priceExGST = priceIncGST / GST_RATE;
             const pgFeeAmount = priceIncGST * (pgFeePercent / 100);
-            const totalCost = baseCost + pgFeeAmount;
+            const fixedFeeExGST = fixedFee / GST_RATE;
+            const allCosts = baseCost + pgFeeAmount + fixedFeeExGST;
             
-            if (priceExGST <= totalCost) return 0;
+            if (priceExGST <= allCosts) return 0;
 
-            const profit = priceExGST - totalCost;
+            const profit = priceExGST - allCosts;
             return (profit / priceExGST) * 100;
         }
 
@@ -166,26 +184,29 @@
             const buyingPrice = parseFloat(inputs.buyingPrice.value) || 0;
             const packingCost = parseFloat(inputs.packingCost.value) || 0;
             const pgFeePercent = parseFloat(inputs.pgFeePercent.value) || 0;
+            const fixedFee = parseFloat(inputs.fixedFee.value) || 0;
             const baseCost = buyingPrice + packingCost;
 
             if (baseCost <= 0) {
-                resultsContainer.innerHTML = `<div class="md:col-span-3 text-center text-slate-500 py-10">Enter a buying price to start.</div>`;
+                resultsContainer.innerHTML = `<div class="md:col-span-3 text-center text-slate-500 py-10">Enter product costs to start.</div>`;
                 return;
             }
 
             // Render suggestion cards
             resultsContainer.innerHTML = SUGGESTED_MARGINS.map(tier => {
-                const rawPriceExGST = calculatePriceFromMargin(baseCost, tier.value, pgFeePercent);
-                if (rawPriceExGST <= 0) return ''; // Don't render if margin is impossible
+                const rawPriceExGST = calculatePriceFromMargin(baseCost, tier.value, pgFeePercent, fixedFee);
+                if (rawPriceExGST <= 0) return '';
 
                 const rawPriceIncGST = rawPriceExGST * GST_RATE;
-                const roundedPriceIncGST = Math.ceil(rawPriceIncGST); // Round up to nearest whole number
+                const roundedPriceIncGST = Math.ceil(rawPriceIncGST);
 
-                // Recalculate profit based on the new rounded price
+                // Recalculate profit based on the rounded price
                 const finalPriceExGST = roundedPriceIncGST / GST_RATE;
                 const pgFeeAmount = roundedPriceIncGST * (pgFeePercent / 100);
-                const totalCost = baseCost + pgFeeAmount;
-                const profit = finalPriceExGST - totalCost;
+                const fixedFeeExGST = fixedFee / GST_RATE;
+                const allCosts = baseCost + pgFeeAmount + fixedFeeExGST;
+                const profit = finalPriceExGST - allCosts;
+                const actualMargin = (profit / finalPriceExGST) * 100;
 
                 const highlightClass = tier.highlight ? 'bg-sky-900/50 border-2 border-sky-500' : 'bg-slate-800 border border-slate-700';
 
@@ -195,7 +216,8 @@
                         <p class="text-3xl font-bold my-3">₹${roundedPriceIncGST.toFixed(2)}</p>
                         <div class="text-sm space-y-1 text-slate-300">
                             <p><strong>Target Margin:</strong> <span>${tier.value}%</span></p>
-                            <p><strong>Net Profit:</strong> <span>₹${profit.toFixed(2)}</span></p>
+                            <p><strong>Actual Margin:</strong> <span class="text-${tier.color}">${actualMargin.toFixed(1)}%</span></p>
+                            <p><strong>Net Profit:</strong> <span class="text-green-400">₹${profit.toFixed(2)}</span></p>
                             <p class="text-slate-400 mt-2">Price (ex-GST): <span>₹${finalPriceExGST.toFixed(2)}</span></p>
                         </div>
                     </div>
@@ -217,11 +239,12 @@
             const buyingPrice = parseFloat(inputs.buyingPrice.value) || 0;
             const packingCost = parseFloat(inputs.packingCost.value) || 0;
             const pgFeePercent = parseFloat(inputs.pgFeePercent.value) || 0;
-            const baseCost = buyingPrice + packingCost;
+            const fixedFee = parseFloat(inputs.fixedFee.value) || 0;
             const margin = parseFloat(customMarginInput.value) || 0;
+            const baseCost = buyingPrice + packingCost;
 
             if (baseCost > 0) {
-                const priceExGST = calculatePriceFromMargin(baseCost, margin, pgFeePercent);
+                const priceExGST = calculatePriceFromMargin(baseCost, margin, pgFeePercent, fixedFee);
                 const priceIncGST = priceExGST * GST_RATE;
                 const roundedPriceIncGST = Math.ceil(priceIncGST);
                 customPriceInput.value = roundedPriceIncGST > 0 ? roundedPriceIncGST.toFixed(0) : '';
@@ -230,8 +253,9 @@
                 if (roundedPriceIncGST > 0) {
                     const finalPriceExGST = roundedPriceIncGST / GST_RATE;
                     const pgFeeAmount = roundedPriceIncGST * (pgFeePercent / 100);
-                    const totalCost = baseCost + pgFeeAmount;
-                    const profit = finalPriceExGST - totalCost;
+                    const fixedFeeExGST = fixedFee / GST_RATE;
+                    const allCosts = baseCost + pgFeeAmount + fixedFeeExGST;
+                    const profit = finalPriceExGST - allCosts;
                     
                     customNetProfitDisplay.textContent = `₹${profit.toFixed(2)}`;
                     customPriceExGSTDisplay.textContent = `₹${finalPriceExGST.toFixed(2)}`;
@@ -250,19 +274,21 @@
             const buyingPrice = parseFloat(inputs.buyingPrice.value) || 0;
             const packingCost = parseFloat(inputs.packingCost.value) || 0;
             const pgFeePercent = parseFloat(inputs.pgFeePercent.value) || 0;
-            const baseCost = buyingPrice + packingCost;
+            const fixedFee = parseFloat(inputs.fixedFee.value) || 0;
             const priceIncGST = parseFloat(customPriceInput.value) || 0;
+            const baseCost = buyingPrice + packingCost;
 
             if (baseCost > 0 && priceIncGST > 0) {
-                const margin = calculateMarginFromPrice(baseCost, priceIncGST, pgFeePercent);
+                const margin = calculateMarginFromPrice(baseCost, priceIncGST, pgFeePercent, fixedFee);
                 customMarginInput.value = margin > 0 ? margin.toFixed(2) : '';
                 
                 // Update the display fields
                 if (margin > 0) {
                     const priceExGST = priceIncGST / GST_RATE;
                     const pgFeeAmount = priceIncGST * (pgFeePercent / 100);
-                    const totalCost = baseCost + pgFeeAmount;
-                    const profit = priceExGST - totalCost;
+                    const fixedFeeExGST = fixedFee / GST_RATE;
+                    const allCosts = baseCost + pgFeeAmount + fixedFeeExGST;
+                    const profit = priceExGST - allCosts;
                     
                     customNetProfitDisplay.textContent = `₹${profit.toFixed(2)}`;
                     customPriceExGSTDisplay.textContent = `₹${priceExGST.toFixed(2)}`;
